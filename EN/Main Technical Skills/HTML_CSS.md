@@ -1101,6 +1101,74 @@ Minimize reflows: batch DOM reads/writes, use `transform` for animations.
 </details>
 
 <details>
+<summary><b>What triggers browser reflow and how can it be minimized?</b></summary>
+
+**Reflow triggers:**
+
+1. **DOM structure changes**: Adding/removing elements, changing innerHTML
+2. **Geometry changes**: Width, height, padding, margin, border
+3. **Position changes**: top, left, position property
+4. **Display changes**: display, visibility
+5. **Font changes**: font-size, font-family
+6. **Reading layout properties**: offsetWidth, offsetHeight, getBoundingClientRect(), scrollTop
+
+**Common mistake - layout thrashing:**
+```javascript
+// Bad: Forces multiple reflows
+items.forEach(item => {
+  const height = element.offsetHeight; // Read (triggers reflow)
+  element.style.height = height + 10 + 'px'; // Write
+});
+
+// Good: Batch reads, then batch writes
+const heights = items.map(() => element.offsetHeight); // All reads
+items.forEach((item, i) => {
+  element.style.height = heights[i] + 10 + 'px'; // All writes
+});
+```
+
+**Minimization strategies:**
+
+1. **Batch DOM changes**:
+```javascript
+// Use DocumentFragment
+const fragment = document.createDocumentFragment();
+items.forEach(item => fragment.appendChild(createNode(item)));
+container.appendChild(fragment); // Single reflow
+```
+
+2. **Use CSS classes instead of inline styles**:
+```javascript
+// Bad: Multiple reflows
+el.style.width = '100px';
+el.style.height = '100px';
+el.style.margin = '10px';
+
+// Good: Single reflow
+el.classList.add('box-style');
+```
+
+3. **Use transform/opacity for animations** (GPU-accelerated, skip layout):
+```css
+/* Bad */
+.animate { left: 100px; top: 100px; }
+
+/* Good */
+.animate { transform: translate(100px, 100px); }
+```
+
+4. **Use `will-change` for complex animations**:
+```css
+.animated { will-change: transform, opacity; }
+```
+
+5. **Use CSS containment**:
+```css
+.isolated { contain: layout; }
+```
+</details>
+
+<details>
 <summary><b>How does the History API work?</b></summary>
 
 Manipulate browser history without page reload:

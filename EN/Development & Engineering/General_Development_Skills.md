@@ -150,6 +150,76 @@ Steps: choose hosting (cloud/VPS), setup server/container, configure web server,
 - **Diffing**: Virtual DOM (React's algorithm)
 </details>
 
+<details>
+<summary><b>Implement Multi-source BFS (Zombie Spread Problem)</b></summary>
+
+**Problem:** Grid-based world where some cells start infected. Infection spreads to adjacent cells each hour. Given starting positions and target time, determine which cells are infected.
+
+**Real-world applications:**
+- Disease/infection spread modeling
+- Service area expansion over time
+- Network propagation problems
+- Geographic coverage analysis
+
+```javascript
+function zombieSpread(grid, zombies, hours) {
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const queue = [];
+  const infected = new Set();
+
+  // Initialize with all zombie positions (multi-source BFS)
+  for (const [r, c] of zombies) {
+    queue.push([r, c, 0]); // [row, col, time]
+    infected.add(`${r},${c}`);
+  }
+
+  const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+  while (queue.length > 0) {
+    const [row, col, time] = queue.shift();
+
+    // Stop if we've exceeded the time limit
+    if (time >= hours) continue;
+
+    // Spread infection to adjacent cells
+    for (const [dr, dc] of directions) {
+      const newRow = row + dr;
+      const newCol = col + dc;
+      const key = `${newRow},${newCol}`;
+
+      // Check boundaries and if already infected
+      if (
+        newRow >= 0 && newRow < rows &&
+        newCol >= 0 && newCol < cols &&
+        !infected.has(key)
+      ) {
+        infected.add(key);
+        queue.push([newRow, newCol, time + 1]);
+      }
+    }
+  }
+
+  return infected;
+}
+
+// Usage
+const grid = Array(5).fill(null).map(() => Array(5).fill(0));
+const zombies = [[0, 0], [4, 4]]; // Starting positions
+const hours = 2;
+
+const result = zombieSpread(grid, zombies, hours);
+// Returns Set of all infected cell coordinates
+```
+
+**Key concepts:**
+- Multi-source BFS starts from multiple nodes simultaneously
+- Track visited nodes to avoid cycles
+- Include distance/time in queue entries
+- O(rows * cols) time complexity
+- Common interview pattern for "spread" problems
+</details>
+
 ## Debugging & Performance
 
 <details>
@@ -562,4 +632,84 @@ fetch('/api/data', {
 - Geographic-specific routing problems
 - Peak traffic timing issues
 - Third-party service degradation
+</details>
+
+<details>
+<summary><b>How do you optimize JavaScript bundle size?</b></summary>
+
+**Analysis first:**
+```bash
+# Webpack bundle analyzer
+npx webpack-bundle-analyzer stats.json
+
+# Source-map-explorer for CRA
+npx source-map-explorer build/static/js/*.js
+```
+
+**Key strategies:**
+
+1. **Code splitting:**
+```javascript
+// Route-based splitting
+const Dashboard = lazy(() => import('./Dashboard'));
+
+// Component-level splitting
+const HeavyChart = lazy(() => import('./HeavyChart'));
+
+// Named exports splitting
+const { parse } = await import('date-fns/parse');
+```
+
+2. **Tree shaking:**
+```javascript
+// Bad: imports entire library
+import _ from 'lodash';
+
+// Good: import only what you need
+import debounce from 'lodash/debounce';
+
+// Or use lodash-es for tree-shaking
+import { debounce } from 'lodash-es';
+```
+
+3. **Replace heavy dependencies:**
+```javascript
+// moment.js (~300KB) → date-fns (~20KB) or dayjs (~2KB)
+// lodash (~70KB) → lodash-es (tree-shakeable)
+// uuid (~12KB) → crypto.randomUUID() (native)
+```
+
+4. **Optimize assets:**
+```javascript
+// Dynamic imports for heavy libraries
+const Prism = await import('prismjs');
+
+// Externalize large libraries via CDN
+externals: {
+  react: 'React',
+  'react-dom': 'ReactDOM'
+}
+```
+
+5. **Webpack/build optimizations:**
+```javascript
+// Enable production mode
+mode: 'production',
+
+// Minification (included in production)
+optimization: {
+  minimize: true,
+  splitChunks: {
+    chunks: 'all',
+    cacheGroups: {
+      vendor: {
+        test: /[\\/]node_modules[\\/]/,
+        name: 'vendors',
+      }
+    }
+  }
+}
+```
+
+**Target:** <200KB gzipped for initial bundle, <50KB for critical path.
 </details>

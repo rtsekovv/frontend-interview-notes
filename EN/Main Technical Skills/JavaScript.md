@@ -1507,6 +1507,65 @@ console.log(diff(old, current));
 </details>
 
 <details>
+<summary><b>Implement async memoization that handles parallel requests</b></summary>
+
+Async memoization caches results of async functions and handles concurrent calls correctly:
+
+```javascript
+function memoizeAsync(fn) {
+  const cache = new Map();
+  const pending = new Map();
+
+  return function(...args) {
+    const key = JSON.stringify(args);
+
+    // Return cached result
+    if (cache.has(key)) {
+      return Promise.resolve(cache.get(key));
+    }
+
+    // Return pending promise if request in flight
+    if (pending.has(key)) {
+      return pending.get(key);
+    }
+
+    // Execute new request
+    const promise = fn.apply(this, args)
+      .then(result => {
+        cache.set(key, result);
+        pending.delete(key);
+        return result;
+      })
+      .catch(error => {
+        pending.delete(key);
+        throw error;
+      });
+
+    pending.set(key, promise);
+    return promise;
+  };
+}
+
+// Usage
+const memoizedFetch = memoizeAsync(async (userId) => {
+  const res = await fetch(`/api/users/${userId}`);
+  return res.json();
+});
+
+// These will share the same request (deduplication)
+memoizedFetch(1); // Makes request
+memoizedFetch(1); // Returns same pending promise
+memoizedFetch(1); // Returns same pending promise
+```
+
+**Key features:**
+- Caches successful results
+- Deduplicates parallel requests with same args
+- Removes pending state on error (allows retry)
+- Uses JSON.stringify for deep key comparison
+</details>
+
+<details>
 <summary><b>Implement search-as-you-type with caching + debounce</b></summary>
 
 ```javascript

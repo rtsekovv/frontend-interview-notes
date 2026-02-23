@@ -1470,6 +1470,65 @@ console.log(diff(old, current));
 </details>
 
 <details>
+<summary><b>Реализуйте async memoization, обрабатывающую параллельные запросы</b></summary>
+
+Async memoization кэширует результаты async-функций и корректно обрабатывает параллельные вызовы:
+
+```javascript
+function memoizeAsync(fn) {
+  const cache = new Map();
+  const pending = new Map();
+
+  return function(...args) {
+    const key = JSON.stringify(args);
+
+    // Возвращаем кэшированный результат
+    if (cache.has(key)) {
+      return Promise.resolve(cache.get(key));
+    }
+
+    // Возвращаем pending promise если запрос в процессе
+    if (pending.has(key)) {
+      return pending.get(key);
+    }
+
+    // Выполняем новый запрос
+    const promise = fn.apply(this, args)
+      .then(result => {
+        cache.set(key, result);
+        pending.delete(key);
+        return result;
+      })
+      .catch(error => {
+        pending.delete(key);
+        throw error;
+      });
+
+    pending.set(key, promise);
+    return promise;
+  };
+}
+
+// Использование
+const memoizedFetch = memoizeAsync(async (userId) => {
+  const res = await fetch(`/api/users/${userId}`);
+  return res.json();
+});
+
+// Эти вызовы используют один запрос (дедупликация)
+memoizedFetch(1); // Делает запрос
+memoizedFetch(1); // Возвращает тот же pending promise
+memoizedFetch(1); // Возвращает тот же pending promise
+```
+
+**Ключевые особенности:**
+- Кэширует успешные результаты
+- Дедуплицирует параллельные запросы с одинаковыми аргументами
+- Удаляет pending-состояние при ошибке (позволяет retry)
+- Использует JSON.stringify для глубокого сравнения ключей
+</details>
+
+<details>
 <summary><b>Реализуйте поиск по мере ввода с кэшированием + debounce</b></summary>
 
 ```javascript

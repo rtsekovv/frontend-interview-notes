@@ -150,6 +150,76 @@ High-level модули не должны зависеть от low-level мод
 - **Diffing**: Virtual DOM (алгоритм React)
 </details>
 
+<details>
+<summary><b>Реализуйте Multi-source BFS (задача распространения зомби)</b></summary>
+
+**Задача:** Сетка, где некоторые клетки изначально заражены. Инфекция распространяется на соседние клетки каждый час. По заданным начальным позициям и времени определить, какие клетки заражены.
+
+**Практическое применение:**
+- Моделирование распространения болезней
+- Расширение зоны обслуживания во времени
+- Задачи распространения в сетях
+- Анализ географического покрытия
+
+```javascript
+function zombieSpread(grid, zombies, hours) {
+  const rows = grid.length;
+  const cols = grid[0].length;
+  const queue = [];
+  const infected = new Set();
+
+  // Инициализация всеми позициями зомби (multi-source BFS)
+  for (const [r, c] of zombies) {
+    queue.push([r, c, 0]); // [row, col, time]
+    infected.add(`${r},${c}`);
+  }
+
+  const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+  while (queue.length > 0) {
+    const [row, col, time] = queue.shift();
+
+    // Остановка при превышении лимита времени
+    if (time >= hours) continue;
+
+    // Распространение инфекции на соседние клетки
+    for (const [dr, dc] of directions) {
+      const newRow = row + dr;
+      const newCol = col + dc;
+      const key = `${newRow},${newCol}`;
+
+      // Проверка границ и не заражено ли уже
+      if (
+        newRow >= 0 && newRow < rows &&
+        newCol >= 0 && newCol < cols &&
+        !infected.has(key)
+      ) {
+        infected.add(key);
+        queue.push([newRow, newCol, time + 1]);
+      }
+    }
+  }
+
+  return infected;
+}
+
+// Использование
+const grid = Array(5).fill(null).map(() => Array(5).fill(0));
+const zombies = [[0, 0], [4, 4]]; // Начальные позиции
+const hours = 2;
+
+const result = zombieSpread(grid, zombies, hours);
+// Возвращает Set всех координат зараженных клеток
+```
+
+**Ключевые концепции:**
+- Multi-source BFS стартует из нескольких узлов одновременно
+- Отслеживание посещенных узлов для избежания циклов
+- Включение расстояния/времени в элементы очереди
+- Временная сложность O(rows * cols)
+- Типичный паттерн для задач "распространения"
+</details>
+
 ## Debugging и производительность
 
 <details>
@@ -486,4 +556,84 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 - Geographic-specific routing problems
 - Peak traffic timing issues
 - Деградация сторонних сервисов
+</details>
+
+<details>
+<summary><b>Как оптимизировать размер JavaScript бандла?</b></summary>
+
+**Сначала анализ:**
+```bash
+# Webpack bundle analyzer
+npx webpack-bundle-analyzer stats.json
+
+# Source-map-explorer для CRA
+npx source-map-explorer build/static/js/*.js
+```
+
+**Ключевые стратегии:**
+
+1. **Code splitting:**
+```javascript
+// Разделение по маршрутам
+const Dashboard = lazy(() => import('./Dashboard'));
+
+// Разделение на уровне компонентов
+const HeavyChart = lazy(() => import('./HeavyChart'));
+
+// Разделение named exports
+const { parse } = await import('date-fns/parse');
+```
+
+2. **Tree shaking:**
+```javascript
+// Плохо: импортирует всю библиотеку
+import _ from 'lodash';
+
+// Хорошо: импортируем только нужное
+import debounce from 'lodash/debounce';
+
+// Или используем lodash-es для tree-shaking
+import { debounce } from 'lodash-es';
+```
+
+3. **Замена тяжелых зависимостей:**
+```javascript
+// moment.js (~300KB) → date-fns (~20KB) или dayjs (~2KB)
+// lodash (~70KB) → lodash-es (tree-shakeable)
+// uuid (~12KB) → crypto.randomUUID() (нативный)
+```
+
+4. **Оптимизация ассетов:**
+```javascript
+// Динамический импорт для тяжелых библиотек
+const Prism = await import('prismjs');
+
+// Вынос больших библиотек в CDN
+externals: {
+  react: 'React',
+  'react-dom': 'ReactDOM'
+}
+```
+
+5. **Оптимизации Webpack/сборки:**
+```javascript
+// Включить production mode
+mode: 'production',
+
+// Минификация (включена в production)
+optimization: {
+  minimize: true,
+  splitChunks: {
+    chunks: 'all',
+    cacheGroups: {
+      vendor: {
+        test: /[\\/]node_modules[\\/]/,
+        name: 'vendors',
+      }
+    }
+  }
+}
+```
+
+**Цель:** <200KB gzipped для начального бандла, <50KB для критического пути.
 </details>

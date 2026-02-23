@@ -1100,6 +1100,74 @@ Access-Control-Allow-Methods: GET, POST
 </details>
 
 <details>
+<summary><b>Что триггерит browser reflow и как его минимизировать?</b></summary>
+
+**Триггеры reflow:**
+
+1. **Изменение структуры DOM**: Добавление/удаление элементов, изменение innerHTML
+2. **Изменение геометрии**: Width, height, padding, margin, border
+3. **Изменение позиции**: top, left, свойство position
+4. **Изменение display**: display, visibility
+5. **Изменение шрифта**: font-size, font-family
+6. **Чтение layout-свойств**: offsetWidth, offsetHeight, getBoundingClientRect(), scrollTop
+
+**Частая ошибка — layout thrashing:**
+```javascript
+// Плохо: Множество reflows
+items.forEach(item => {
+  const height = element.offsetHeight; // Чтение (триггерит reflow)
+  element.style.height = height + 10 + 'px'; // Запись
+});
+
+// Хорошо: Все чтения, затем все записи
+const heights = items.map(() => element.offsetHeight); // Все чтения
+items.forEach((item, i) => {
+  element.style.height = heights[i] + 10 + 'px'; // Все записи
+});
+```
+
+**Стратегии минимизации:**
+
+1. **Группируйте изменения DOM**:
+```javascript
+// Используйте DocumentFragment
+const fragment = document.createDocumentFragment();
+items.forEach(item => fragment.appendChild(createNode(item)));
+container.appendChild(fragment); // Один reflow
+```
+
+2. **Используйте CSS-классы вместо inline-стилей**:
+```javascript
+// Плохо: Несколько reflows
+el.style.width = '100px';
+el.style.height = '100px';
+el.style.margin = '10px';
+
+// Хорошо: Один reflow
+el.classList.add('box-style');
+```
+
+3. **Используйте transform/opacity для анимаций** (GPU-ускорение, пропуск layout):
+```css
+/* Плохо */
+.animate { left: 100px; top: 100px; }
+
+/* Хорошо */
+.animate { transform: translate(100px, 100px); }
+```
+
+4. **Используйте `will-change` для сложных анимаций**:
+```css
+.animated { will-change: transform, opacity; }
+```
+
+5. **Используйте CSS containment**:
+```css
+.isolated { contain: layout; }
+```
+</details>
+
+<details>
 <summary><b>Как работает History API?</b></summary>
 
 Манипуляция историей браузера без перезагрузки страницы:

@@ -1632,6 +1632,88 @@ const DeepChild = React.memo(Component, (prev, next) => {
 ## Coding Challenges
 
 <details>
+<summary><b>Build a Grid Light Box with LIFO deactivation</b></summary>
+
+Build a grid of clickable lights where clicking a light activates it, and clicking another light deactivates previously activated lights in reverse order (LIFO - Last In First Out).
+
+**Requirements:**
+- Grid of N x M cells
+- Click to activate light
+- Clicking already active light deactivates it
+- Lights deactivate in reverse order of activation
+
+```javascript
+function GridLightBox({ rows = 3, cols = 3 }) {
+  const [activeLights, setActiveLights] = useState([]);
+
+  const handleLightClick = useCallback((id) => {
+    setActiveLights(prev => {
+      if (prev.includes(id)) {
+        // Remove if already active
+        return prev.filter(light => light !== id);
+      }
+      // Add to activation stack
+      return [...prev, id];
+    });
+  }, []);
+
+  const deactivateLast = useCallback(() => {
+    setActiveLights(prev => prev.slice(0, -1));
+  }, []);
+
+  const lights = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < rows * cols; i++) {
+      result.push(i);
+    }
+    return result;
+  }, [rows, cols]);
+
+  return (
+    <div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${cols}, 50px)`,
+          gap: '5px'
+        }}
+      >
+        {lights.map(id => (
+          <button
+            key={id}
+            onClick={() => handleLightClick(id)}
+            style={{
+              width: 50,
+              height: 50,
+              backgroundColor: activeLights.includes(id) ? 'yellow' : 'gray',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          />
+        ))}
+      </div>
+      <button onClick={deactivateLast} disabled={activeLights.length === 0}>
+        Deactivate Last
+      </button>
+    </div>
+  );
+}
+```
+
+**What's being tested:**
+- State management with arrays (tracking activation order)
+- Correct use of hooks (useCallback, useMemo)
+- LIFO stack implementation
+- Handling edge cases (clicking same light twice)
+- Performance considerations (avoiding unnecessary re-renders)
+
+**Follow-up questions:**
+- What if we need activation animation sequence?
+- How to add a "deactivate all" feature with animation delay?
+- How to persist state to localStorage?
+</details>
+
+<details>
 <summary><b>Create a reusable table component with sorting, pagination, filter & virtual scroll</b></summary>
 
 ```javascript

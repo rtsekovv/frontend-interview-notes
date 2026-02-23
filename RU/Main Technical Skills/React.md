@@ -1592,6 +1592,88 @@ const DeepChild = React.memo(Component, (prev, next) => {
 ## Задачи с кодом
 
 <details>
+<summary><b>Создайте Grid Light Box с LIFO-деактивацией</b></summary>
+
+Создайте сетку кликабельных огней, где клик по огню активирует его, а клик по другому огню деактивирует ранее активированные огни в обратном порядке (LIFO — Last In First Out).
+
+**Требования:**
+- Сетка N x M ячеек
+- Клик активирует огонь
+- Клик по уже активному огню деактивирует его
+- Огни деактивируются в обратном порядке активации
+
+```javascript
+function GridLightBox({ rows = 3, cols = 3 }) {
+  const [activeLights, setActiveLights] = useState([]);
+
+  const handleLightClick = useCallback((id) => {
+    setActiveLights(prev => {
+      if (prev.includes(id)) {
+        // Удаляем если уже активен
+        return prev.filter(light => light !== id);
+      }
+      // Добавляем в стек активации
+      return [...prev, id];
+    });
+  }, []);
+
+  const deactivateLast = useCallback(() => {
+    setActiveLights(prev => prev.slice(0, -1));
+  }, []);
+
+  const lights = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < rows * cols; i++) {
+      result.push(i);
+    }
+    return result;
+  }, [rows, cols]);
+
+  return (
+    <div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${cols}, 50px)`,
+          gap: '5px'
+        }}
+      >
+        {lights.map(id => (
+          <button
+            key={id}
+            onClick={() => handleLightClick(id)}
+            style={{
+              width: 50,
+              height: 50,
+              backgroundColor: activeLights.includes(id) ? 'yellow' : 'gray',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          />
+        ))}
+      </div>
+      <button onClick={deactivateLast} disabled={activeLights.length === 0}>
+        Деактивировать последний
+      </button>
+    </div>
+  );
+}
+```
+
+**Что проверяется:**
+- Управление state с массивами (отслеживание порядка активации)
+- Корректное использование hooks (useCallback, useMemo)
+- Реализация стека LIFO
+- Обработка edge cases (клик по тому же огню дважды)
+- Соображения производительности (избегание лишних re-renders)
+
+**Дополнительные вопросы:**
+- Как добавить анимацию последовательности активации?
+- Как добавить функцию "деактивировать все" с задержкой анимации?
+- Как сохранить состояние в localStorage?
+</details>
+
+<details>
 <summary><b>Создайте переиспользуемый компонент таблицы с сортировкой, пагинацией, фильтром и виртуальным скроллом</b></summary>
 
 ```javascript
